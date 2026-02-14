@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.mj.portfolio</groupId>
+        <artifactId>arcade-hub</artifactId>
+        <version>1.0.0</version>
+    </parent>
+
+    <artifactId>arcade-hub-web</artifactId>
+    <packaging>pom</packaging>
+
+    <name>Arcade Hub Web</name>
+    <description>Real-time web dashboard consuming WebSocket stream</description>
+
+    <!-- packaging=pom: Maven does nothing for this module during mvn clean package.
+         Static HTML/CSS/JS files are deployed directly to /var/www/portfolio/arcade/
+         via scp in the deploy script. -->
+</project>

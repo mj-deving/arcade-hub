@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.mj.portfolio</groupId>
+        <artifactId>arcade-hub</artifactId>
+        <version>1.0.0</version>
+    </parent>
+
+    <artifactId>arcade-hub-simulator</artifactId>
+    <packaging>jar</packaging>
+
+    <name>Arcade Hub Simulator</name>
+    <description>Standalone Java simulator generating realistic arcade machine events</description>
+
+    <dependencies>
+        <!-- Jackson for JSON serialization to the REST API.
+             Explicit version required: spring-boot-dependencies BOM is imported
+             in the parent but its managed versions don't automatically provide
+             jackson-databind as a standalone dependency in non-Spring modules. -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.16.1</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.3.0</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>com.mj.portfolio.simulator.ArcadeSimulatorApp</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+            <!-- Produces arcade-hub-simulator-1.0.0-jar-with-dependencies.jar
+                 bound to the 'package' phase so mvn clean package builds it. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>3.6.0</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>com.mj.portfolio.simulator.ArcadeSimulatorApp</mainClass>
+                        </manifest>
+                    </archive>
+                    <descriptorRefs>
+                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                    </descriptorRefs>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>make-assembly</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

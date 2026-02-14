@@ -1,0 +1,51 @@
+spring:
+  application:
+    name: arcade-hub-server
+  profiles:
+    active: dev
+  datasource:
+    url: jdbc:postgresql://localhost:5432/arcadedb
+    username: portfolio
+    password: portfolio_dev_password
+  jpa:
+    # schema.sql runs before Hibernate validate - required so CREATE TABLE IF NOT EXISTS
+    # completes before Hibernate inspects the schema
+    defer-datasource-initialization: true
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:db/schema.sql
+
+server:
+  port: 8081
+
+simulation:
+  enabled: true
+  interval-ms: 3000
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false

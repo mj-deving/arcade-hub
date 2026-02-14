@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: arcadedb
+          POSTGRES_USER: portfolio
+          POSTGRES_PASSWORD: portfolio_dev_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: maven
+
+      - name: Apply database schema
+        run: |
+          PGPASSWORD=portfolio_dev_password psql \
+            -h localhost -U portfolio -d arcadedb \
+            -f arcade-hub-server/src/main/resources/db/schema.sql
+
+      - name: Compile all modules
+        run: mvn clean compile -B
+
+      - name: Run server tests
+        run: mvn test -pl arcade-hub-server -B
+
+      - name: Package all modules
+        run: mvn clean package -DskipTests -B
+
+      - name: Upload server JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: arcade-hub-server
+          path: arcade-hub-server/target/arcade-hub-server-*.jar
+          retention-days: 7
+
+      - name: Upload simulator JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: arcade-hub-simulator
+          path: arcade-hub-simulator/target/arcade-hub-simulator-*-jar-with-dependencies.jar
+          retention-days: 7
