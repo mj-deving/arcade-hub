@@ -95,6 +95,8 @@ jobs:
             mvn clean package -pl arcade-hub-server -DskipTests -B
             bash /home/dev/deploy-app.sh arcade-hub \
               /home/dev/projects/arcade-hub/arcade-hub-server/target/arcade-hub-server-1.0.0.jar
+            sudo cp -r arcade-hub-web/css arcade-hub-web/js arcade-hub-web/*.html /var/www/portfolio/arcade/
+            sudo chown -R www-data:www-data /var/www/portfolio/arcade/
 
       - name: Health check
         run: |
