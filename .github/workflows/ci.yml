@@ -45,8 +45,18 @@ jobs:
       - name: Compile all modules
         run: mvn clean compile -B
 
-      - name: Run server tests
+      - name: Run server tests with coverage
         run: mvn test -pl arcade-hub-server -B
+
+      - name: Generate JaCoCo coverage report
+        run: mvn jacoco:report -pl arcade-hub-server -B
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: arcade-hub-server/target/site/jacoco/
+          retention-days: 14
 
       - name: Package all modules
         run: mvn clean package -DskipTests -B
@@ -64,3 +74,30 @@ jobs:
           name: arcade-hub-simulator
           path: arcade-hub-simulator/target/arcade-hub-simulator-*-jar-with-dependencies.jar
           retention-days: 7
+
+  deploy:
+    name: Deploy to VPS
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    environment: production
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 213.199.32.18
+          username: dev
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd /home/dev/projects/arcade-hub
+            git pull origin master
+            mvn clean package -pl arcade-hub-server -DskipTests -B
+            bash /home/dev/deploy-app.sh arcade-hub \
+              /home/dev/projects/arcade-hub/arcade-hub-server/target/arcade-hub-server-1.0.0.jar
+
+      - name: Health check
+        run: |
+          sleep 10
+          curl -sf -u admin:admin123 http://213.199.32.18/arcade/api/machines?page=0\&size=1 || exit 1
+          echo "Health check passed"

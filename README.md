@@ -1,40 +1,24 @@
 # Arcade Hub
 
-**The Showpiece Project** - Complete arcade machine management system with real-time monitoring, access control, and business analytics.
+[![CI](https://github.com/mj-deving/arcade-hub/actions/workflows/ci.yml/badge.svg)](https://github.com/mj-deving/arcade-hub/actions/workflows/ci.yml)
+![Java 17](https://img.shields.io/badge/Java-17-blue?logo=openjdk)
+![Spring Boot 3.2](https://img.shields.io/badge/Spring%20Boot-3.2-brightgreen?logo=springboot)
+![PostgreSQL 16](https://img.shields.io/badge/PostgreSQL-16-blue?logo=postgresql)
 
-Directly addresses the job requirements: Gaming/arcade machine network management, status monitoring, event tracking, and multi-client architecture.
+**The Showpiece Project** — Complete arcade machine management system with real-time monitoring, access control, and business analytics.
 
-## Project 4 - Learning Goals (Advanced)
+Directly addresses gaming industry requirements: machine network management, status monitoring, event tracking, regulatory compliance (GlüStV 2021), and multi-client architecture.
 
-Demonstrate enterprise architecture skills:
-- WebSocket real-time communication
-- Multi-module complex architecture
-- Event-driven simulation engine
-- Advanced Spring Boot patterns
-- Domain-driven design thinking
-- Production-ready code
-- Comprehensive documentation
-- Live demo capability
+Live API: `http://213.199.32.18/arcade/api/machines` (Basic Auth required)
+Live Dashboard: `http://213.199.32.18/arcade/` (login: admin / admin123)
 
 ## Tech Stack
 
-**Server:**
-- Spring Boot 3.2
-- Spring WebSocket
-- Spring Data JPA
-- PostgreSQL
-- Swagger/OpenAPI
+**Server (Spring Boot 3.2):** REST API, WebSocket (STOMP), JPA, PostgreSQL, Swagger/OpenAPI, JaCoCo coverage
 
-**Simulator:**
-- Java standalone application
-- Scheduled tasks
-- REST client
+**Simulator (Standalone Java):** Multi-threaded event generator, configurable via properties or env vars
 
-**Web:**
-- HTML5, CSS3, Vanilla JavaScript
-- Bootstrap 5
-- WebSocket client
-- Chart.js
+**Web Dashboard (HTML/JS):** Bootstrap 5, Chart.js 4, STOMP.js + SockJS for real-time updates
 
 ## Modules
 
@@ -57,20 +41,31 @@ Central management server for arcade operations.
 
 **API Endpoints:**
 ```
-GET    /api/machines              - List all machines
-GET    /api/machines/{id}         - Machine details
-POST   /api/machines              - Create machine
-PUT    /api/machines/{id}         - Update machine
-DELETE /api/machines/{id}         - Delete machine
+GET    /arcade/api/machines              - List machines (paginated, filterable)
+GET    /arcade/api/machines/{id}         - Machine details
+POST   /arcade/api/machines              - Register machine
+PUT    /arcade/api/machines/{id}         - Update machine
+PATCH  /arcade/api/machines/{id}/heartbeat - Send heartbeat
+DELETE /arcade/api/machines/{id}         - Delete machine
 
-GET    /api/locations             - List locations
-POST   /api/locations             - Create location
-GET    /api/locations/{id}/stats  - Location statistics
+GET    /arcade/api/locations             - List locations
+POST   /arcade/api/locations             - Create location
+PUT    /arcade/api/locations/{id}        - Update location
+DELETE /arcade/api/locations/{id}        - Delete location
 
-GET    /api/events                - Event history
-GET    /api/reports/daily         - Daily reports
+GET    /arcade/api/machine-events        - Event history (filterable by machineId)
+POST   /arcade/api/machine-events        - Record event (broadcasts via WebSocket)
 
-WS     /ws/events                 - WebSocket for live updates
+GET    /arcade/api/access-events         - Access history (filterable by locationId)
+POST   /arcade/api/access-events         - Record check-in/check-out
+
+GET    /arcade/api/reports/daily          - Daily report (locationId + date)
+
+WS     /arcade/ws/events                  - STOMP/SockJS for live updates
+       Subscribe: /topic/events
+
+GET    /health                            - Service health check
+GET    /swagger-ui.html                   - Interactive API documentation
 ```
 
 ### arcade-hub-simulator
@@ -99,15 +94,14 @@ java -jar arcade-hub-simulator-1.0.0.jar \
 
 ### arcade-hub-web
 
-Modern web dashboard with real-time updates.
+Real-time monitoring dashboard with WebSocket integration.
 
-**Views:**
-- **Dashboard:** Overview, KPIs, alerts
-- **Machines Grid:** Visual status of all machines with live updates
-- **Locations:** Multi-location management and statistics
-- **Access Control:** Current venue occupancy, check-in/out
-- **Reports:** Daily/weekly analytics with charts
-- **Settings:** Configuration and administration
+**Pages:**
+- **Login** (`index.html`): Basic Auth login, validates against live API
+- **Dashboard** (`dashboard.html`): Stat cards (Total/Online/Maintenance/Error), doughnut chart by type, live event feed via WebSocket
+- **Machines** (`machines.html`): Full machine table with status filter, live heartbeat freshness indicators (green < 60s, amber < 300s, red > 300s), real-time status updates via WebSocket
+
+**Tech:** Bootstrap 5, Chart.js 4, STOMP.js 7.0 + SockJS 1.6 (CDN), amber/gold accent theme
 
 ## Quick Start
 
@@ -158,104 +152,90 @@ cp arcade-hub-web/* /var/www/portfolio/
 
 ```
 arcade-hub/
+├── pom.xml                        ← parent POM (spring-boot-dependencies BOM)
+├── .github/workflows/ci.yml      ← GitHub Actions CI + deploy
+├── deploy-web.sh                  ← SCP web files to VPS
+├── LEARNING.md                    ← Domain context (GlüStV 2021)
+│
 ├── arcade-hub-server/
-│   ├── src/main/
-│   │   ├── java/com/mj/portfolio/
-│   │   │   ├── entity/
-│   │   │   ├── repository/
-│   │   │   ├── service/
-│   │   │   ├── controller/
-│   │   │   ├── websocket/
-│   │   │   ├── event/
-│   │   │   └── config/
-│   │   └── resources/
-│   │       ├── application.yml
-│   │       └── schema.sql
-│   └── src/test/
+│   ├── pom.xml
+│   ├── Dockerfile
+│   └── src/main/java/com/mj/portfolio/
+│       ├── config/                ← Security, CORS, WebSocket, OpenAPI
+│       ├── controller/            ← 6 REST controllers
+│       ├── dto/                   ← Request/Response DTOs with @Schema
+│       ├── entity/                ← JPA entities + enums
+│       ├── repository/            ← Spring Data JPA interfaces
+│       ├── service/               ← Business logic + event broadcasting
+│       └── resources/application.yml
 │
 ├── arcade-hub-simulator/
-│   ├── src/main/java/com/mj/portfolio/
-│   │   ├── simulator/
-│   │   ├── client/
-│   │   └── model/
-│   └── src/main/resources/
-│       └── simulator.properties
+│   ├── pom.xml
+│   ├── Dockerfile
+│   └── src/main/java/com/mj/portfolio/simulator/
+│       ├── ArcadeSimulatorApp.java   ← Entry point
+│       ├── SimulatorConfig.java       ← Properties + env var overrides
+│       ├── ApiClient.java             ← HTTP client with Basic Auth
+│       ├── EventGenerator.java        ← Random event generation
+│       └── VirtualMachine.java        ← Thread per machine
 │
 ├── arcade-hub-web/
-│   ├── index.html
-│   ├── css/
-│   ├── js/
-│   │   ├── websocket-client.js
-│   │   ├── api.js
-│   │   ├── dashboard.js
-│   │   └── charts.js
-│   └── assets/
+│   ├── index.html                 ← Login page
+│   ├── dashboard.html             ← Real-time dashboard
+│   ├── machines.html              ← Machine list with live updates
+│   ├── css/app.css                ← Amber/gold themed styles
+│   └── js/
+│       ├── auth.js                ← Basic Auth management
+│       ├── api.js                 ← REST API wrapper
+│       ├── utils.js               ← Status badges, formatting
+│       ├── websocket.js           ← STOMP.js + SockJS client
+│       ├── dashboard.js           ← Charts + live event feed
+│       └── machines.js            ← Machine table + live updates
 │
-├── pom.xml (parent)
-├── docker-compose.yml        # Local development stack
-└── README.md
+└── .ai/decisions/                 ← Architecture Decision Records
+    ├── 001-in-memory-stomp-broker.md
+    ├── 002-simulator-standalone-jar.md
+    └── 003-sockjs-stomp-fallback.md
 ```
 
-## Docker (Optional - for easy local setup)
-
-```bash
-docker-compose up -d
-
-# Services start:
-# - PostgreSQL: localhost:5432
-# - Server: localhost:8080
-# - Simulator: starts automatically
-# - Web: localhost:3000 (via nginx)
-```
-
-## CI/CD Pipeline (GitLab)
+## CI/CD Pipeline (GitHub Actions)
 
 Automated build, test, and deployment:
 
-1. **Build Stage:** Compile all 3 modules
-2. **Test Stage:** Unit tests, integration tests
-3. **Coverage:** Generate JaCoCo reports
-4. **Deploy Stage:** Auto-deploy to VPS (main branch only)
+1. **Build:** Compile all modules
+2. **Test:** Server unit tests with **JaCoCo coverage** (uploaded as artifact)
+3. **Package:** Fat JARs for server + simulator
+4. **Deploy:** SSH to VPS, pull + build + restart (master only, manual approval via GitHub Environments)
 
-## Demonstration Mode
+Requires `VPS_SSH_KEY` secret and `production` environment configured in GitHub.
 
-Run with demo flag to populate initial data:
+## Docker Quick Start
+
+See [DOCKER.md](../DOCKER.md) at the portfolio root for full instructions:
 
 ```bash
-java -jar arcade-hub-server-1.0.0.jar \
-  --spring.profiles.active=demo
+# Build JARs first, then:
+docker-compose up --build   # from portfolio root
+# Visit http://localhost/arcade/
 ```
-
-Creates:
-- 10 pre-configured locations
-- 50 simulated machines
-- Sample historical data
-- Simulator automatically starts
-
-Perfect for interviews - immediate live data!
 
 ## Key Architectural Decisions
 
-1. **WebSocket for Real-time Updates** - Necessary for live machine status
-2. **Separate Simulator Module** - Demonstrates understanding of distributed systems
-3. **Event-Driven Design** - Clean separation of concerns
-4. **Multi-Module Maven** - Professional project structure
-5. **Domain Entities** - Clear business logic modeling
-6. **REST API + WebSocket** - Shows understanding of different communication patterns
+| Decision | Rationale | ADR |
+|----------|-----------|-----|
+| In-memory STOMP broker | Single instance, zero ops overhead, sufficient for portfolio | [001](.ai/decisions/001-in-memory-stomp-broker.md) |
+| Simulator as standalone JAR | Separation of concerns, realistic architecture, no Spring dependency | [002](.ai/decisions/002-simulator-standalone-jar.md) |
+| SockJS + STOMP | Universal browser support, built-in pub/sub, Spring first-class support | [003](.ai/decisions/003-sockjs-stomp-fallback.md) |
+| Multi-module Maven | Clean module boundaries, independent build/deploy lifecycle | — |
+| Domain model maps to GlüStV 2021 | Locations (capacity), access events (Sperrdatei), machine events (revenue audit) | [LEARNING.md](LEARNING.md) |
 
-## Next Steps
+## Documentation
 
-After this project:
-- ✓ Advanced Spring Boot mastery
-- ✓ Real-time web applications
-- ✓ Distributed systems thinking
-- ✓ Production-ready architecture
-- ✓ Complete portfolio ready for interviews
+- **[LEARNING.md](LEARNING.md)** — German arcade regulation context and how the data model maps to it
+- **[.ai/decisions/](.ai/decisions/)** — Architecture Decision Records
+- **[.ai/diagrams/](../.ai/diagrams/)** — C4 and sequence diagrams (Mermaid, renders on GitHub)
+- **Swagger UI** — Interactive API docs at `/swagger-ui.html`
 
-## Interview Talking Points
+---
 
-- "Designed this to directly simulate the arcade/gaming focus of your company"
-- "WebSocket architecture shows understanding of real-time systems"
-- "Simulator demonstrates distributed system thinking"
-- "Multi-module approach shows enterprise architecture skills"
-- "Ready to demo live with realistic data"
+*Part of a 4-project portfolio demonstrating Java full-stack development from CLI → REST API → Web UI → WebSocket.*
