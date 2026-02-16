@@ -27,6 +27,7 @@ springdoc:
     path: /api-docs
   swagger-ui:
     path: /swagger-ui.html
+    url: /arcade/api-docs
     operationsSorter: method
 
 simulation:

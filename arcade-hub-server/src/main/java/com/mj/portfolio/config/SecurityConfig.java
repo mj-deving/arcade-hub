@@ -42,6 +42,8 @@ public class SecurityConfig {
                     "/swagger-ui/**",
                     "/swagger-ui.html",
                     "/v3/api-docs/**",
+                    "/api-docs/**",
+                    "/api-docs",
                     "/health",
                     "/ws/**"   // WebSocket HTTP upgrade handshake must be public
                 ).permitAll()
