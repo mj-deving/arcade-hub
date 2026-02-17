@@ -111,6 +111,14 @@ Real-time monitoring dashboard with WebSocket integration.
 - PostgreSQL 16
 - Modern web browser
 
+### IDE Setup
+
+**Eclipse:** File → Import → Existing Maven Projects → select project root → all 3 modules auto-detected
+
+**IntelliJ IDEA:** File → Open → select root `pom.xml` → Open as Project
+
+Both IDEs resolve the multi-module structure automatically via the parent POM.
+
 ### Full Stack (Local Development)
 
 **Terminal 1 - Server:**
@@ -235,6 +243,17 @@ docker-compose up --build   # from portfolio root
 - **[.ai/decisions/](.ai/decisions/)** — Architecture Decision Records
 - **[.ai/diagrams/](../.ai/diagrams/)** — C4 and sequence diagrams (Mermaid, renders on GitHub)
 - **Swagger UI** — Interactive API docs at `/swagger-ui.html`
+
+---
+
+## Development Workflow
+
+- **Issue tracking** via GitHub Issues and GitLab Boards (Kanban-style)
+- **Conventional commits** (`feat:`, `fix:`, `test:`, `refactor:`, `ci:`)
+- **CI/CD pipeline** — automated build, test (with JaCoCo coverage), and deploy
+- **Architecture Decision Records** for non-obvious technical choices
+- **Dual-remote** repository (GitHub + GitLab)
+- **AI-assisted development** with Claude Code (~80% implementation, human architecture decisions)
 
 ---
 
