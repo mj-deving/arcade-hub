@@ -12,6 +12,16 @@ Directly addresses gaming industry requirements: machine network management, sta
 Live API: `http://213.199.32.18/arcade/api/machines` (Basic Auth required)
 Live Dashboard: `http://213.199.32.18/arcade/` (login: admin / admin123)
 
+## Screenshots
+
+| Dashboard | Machine List |
+|-----------|-------------|
+| ![Dashboard](docs/screenshots/dashboard.png) | ![Machines](docs/screenshots/machines.png) |
+
+**Dashboard:** Stat cards (total/online/maintenance/error), doughnut chart by machine type, live event feed via WebSocket — events appear in real-time without page refresh.
+
+**Machines:** Sortable machine table with status filter, color-coded badges (Online/Maintenance/Error), live heartbeat freshness indicators updated via WebSocket.
+
 ## Tech Stack
 
 **Server (Spring Boot 3.2):** REST API, WebSocket (STOMP), JPA, PostgreSQL, Swagger/OpenAPI, JaCoCo coverage
@@ -217,6 +227,123 @@ Automated build, test, and deployment:
 
 Requires `VPS_SSH_KEY` secret and `production` environment configured in GitHub.
 
+## Architecture
+
+### System Overview
+
+How Arcade Hub fits into the portfolio's deployment on the VPS:
+
+```mermaid
+graph TB
+    User["👤 User (Browser)"]
+
+    subgraph VPS["VPS 213.199.32.18"]
+        nginx["nginx :80<br/>Reverse Proxy + Static Files"]
+
+        subgraph P4["Arcade Hub (Project 4)"]
+            style P4 fill:#fff3e0,stroke:#f57c00
+            AH_API["arcade-hub-server :8081<br/>REST API + WebSocket"]
+            AH_Web["arcade-hub-web<br/>Dashboard (HTML/JS/STOMP.js)"]
+            Sim["arcade-hub-simulator<br/>Multi-threaded Event Generator"]
+        end
+
+        subgraph P2["Device Manager (Project 2)"]
+            DM_API["device-manager-server :8080<br/>REST API"]
+            DM_Web["device-manager-web<br/>Dashboard (HTML/JS)"]
+        end
+
+        DB[("PostgreSQL 16<br/>devicedb + arcadedb")]
+    end
+
+    User -->|"HTTP/WS :80"| nginx
+    nginx -->|"/arcade/"| AH_Web
+    nginx -->|"/arcade/api/"| AH_API
+    nginx -->|"/arcade/ws/"| AH_API
+    nginx -->|"/"| DM_Web
+    nginx -->|"/api/v1/"| DM_API
+    Sim -->|"HTTP POST<br/>Events + Heartbeats"| AH_API
+    AH_API -->|"STOMP/WebSocket<br/>/topic/events"| AH_Web
+    AH_API --> DB
+    DM_API --> DB
+```
+
+### Simulator Lifecycle
+
+How the standalone simulator JAR spawns threads and generates events:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant App as ArcadeSimulatorApp
+    participant Cfg as SimulatorConfig
+    participant API as ApiClient
+    participant Server as arcade-hub-server :8081
+    participant VM as VirtualMachine[N]
+
+    rect rgb(240, 248, 255)
+        Note over App,Server: Initialization
+        App->>Cfg: Load simulator.properties
+        App->>API: GET /arcade/api/machines
+        API->>Server: Fetch registered machines
+        Server-->>API: List of machines
+    end
+
+    loop For each machine
+        App->>VM: Spawn thread(machine)
+    end
+
+    rect rgb(245, 255, 245)
+        Note over VM,Server: Continuous Operation
+        par Heartbeat Loop (every 30s)
+            VM->>API: PATCH /machines/{id}/heartbeat
+            API->>Server: Update lastHeartbeat
+        and Event Loop (every 5s)
+            VM->>VM: Generate random event<br/>(COIN_IN, COIN_OUT, ERROR)
+            VM->>API: POST /machine-events
+            API->>Server: Record + broadcast via WebSocket
+        end
+    end
+
+    Note over App: Runs until SIGINT (Ctrl+C)
+    App->>VM: Shutdown all threads
+```
+
+### Real-Time Event Flow
+
+How a machine event travels from REST API to live browser update:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Sim as Simulator
+    participant API as Spring Boot :8081
+    participant SVC as MachineEventService
+    participant DB as PostgreSQL
+    participant STOMP as STOMP Broker
+    participant WS as Browser (STOMP.js)
+
+    rect rgb(240, 248, 255)
+        Note over Sim,DB: Server-Side Processing
+        Sim->>API: POST /arcade/api/machine-events
+        API->>SVC: record(MachineEventRequest)
+        SVC->>DB: INSERT INTO machine_events
+        SVC->>SVC: Build WebSocketEvent DTO
+    end
+
+    rect rgb(255, 248, 240)
+        Note over SVC,WS: Real-Time Broadcast
+        SVC->>STOMP: convertAndSend("/topic/events", event)
+        STOMP-->>WS: STOMP MESSAGE frame
+    end
+
+    rect rgb(245, 255, 245)
+        Note over WS,WS: Client-Side Update
+        WS->>WS: onEvent callback fires
+        WS->>WS: Update dashboard stat cards
+        WS->>WS: Prepend to live event feed
+    end
+```
+
 ## Docker Quick Start
 
 See [DOCKER.md](../DOCKER.md) at the portfolio root for full instructions:
@@ -241,7 +368,7 @@ docker-compose up --build   # from portfolio root
 
 - **[LEARNING.md](LEARNING.md)** — German arcade regulation context and how the data model maps to it
 - **[.ai/decisions/](.ai/decisions/)** — Architecture Decision Records
-- **[.ai/diagrams/](../.ai/diagrams/)** — C4 and sequence diagrams (Mermaid, renders on GitHub)
+- **Architecture diagrams** — Embedded above in the [Architecture](#architecture) section (Mermaid, renders on GitHub)
 - **Swagger UI** — Interactive API docs at `/swagger-ui.html`
 
 ---
